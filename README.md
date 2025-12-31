@@ -1,4 +1,4 @@
-# 🏛️ E-Kinerja Pemda (Sistem Informasi Log Harian Pegawai)
+# 🏛️ E-LOG Pemda (Sistem Informasi Log Harian Pegawai)
 
 **E-LOG Pemda** adalah aplikasi mobile/web berbasis **Flutter** dan **Laravel** yang dirancang untuk mempermudah pencatatan, pemantauan, dan verifikasi kinerja harian pegawai di lingkungan Pemerintahan Daerah. Aplikasi ini menerapkan sistem hierarki kepegawaian untuk validasi berjenjang.
 

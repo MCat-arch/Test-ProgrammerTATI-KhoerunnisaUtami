@@ -37,7 +37,7 @@ echo $tes->helloworld(6);
 1 2 3 hello world 6
 ```
 
-![Output Soal 3](output_soal3.png)  
+![predikat_kerja](predikat_kerja.png)  
 *(Gambar output saat menjalankan kode. Jika tidak ada gambar, silakan jalankan kode di terminal.)*
 
 ## Soal 4: Evaluasi Kinerja
@@ -65,7 +65,7 @@ echo "Test : " . $evaluator->predikat_kinerja($hasil1, $perilaku1) . "\n";
 Test : Sangat Baik
 ```
 
-![Output Soal 4](output_soal4.png)  
+![helloworld](helloworld.png)  
 *(Gambar output saat menjalankan kode. Jika tidak ada gambar, silakan jalankan kode di terminal.)*
 
 ## Cara Menjalankan

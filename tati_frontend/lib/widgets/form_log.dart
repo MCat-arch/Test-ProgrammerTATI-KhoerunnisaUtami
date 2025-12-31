@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:tati_frontend/models/logs_model.dart';
+import '../models/logs_model.dart';
 import '../providers/log_provider.dart';
+import '../utils/app_theme.dart'; // Pastikan import theme
 
 class FormLogWidget extends StatefulWidget {
-  // Jika null = Mode Create, Jika ada isi = Mode Edit
   final LogsModel? logToEdit; 
 
   const FormLogWidget({super.key, this.logToEdit});
@@ -16,6 +16,7 @@ class FormLogWidget extends StatefulWidget {
 
 class _FormLogWidgetState extends State<FormLogWidget> {
   final _aktivitasController = TextEditingController();
+  final _dateController = TextEditingController(); // Controller tambahan untuk tampilan tanggal
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
 
@@ -24,10 +25,41 @@ class _FormLogWidgetState extends State<FormLogWidget> {
   @override
   void initState() {
     super.initState();
-    // Jika Mode Edit, isi form dengan data lama
+    // Set tanggal awal ke controller
+    _dateController.text = DateFormat('EEEE, d MMMM y').format(_selectedDate);
+
     if (_isEditing) {
       _aktivitasController.text = widget.logToEdit!.aktivitas;
       _selectedDate = widget.logToEdit!.tanggal;
+      _dateController.text = DateFormat('EEEE, d MMMM y').format(_selectedDate);
+    }
+  }
+
+  void _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2023),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        // Kustomisasi warna DatePicker agar sesuai tema
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppTheme.primaryBlue,
+              onPrimary: Colors.white,
+              onSurface: AppTheme.textDark,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+        _dateController.text = DateFormat('EEEE, d MMMM y').format(picked);
+      });
     }
   }
 
@@ -42,18 +74,9 @@ class _FormLogWidgetState extends State<FormLogWidget> {
       final provider = Provider.of<LogProvider>(context, listen: false);
 
       if (_isEditing) {
-        // --- MODE UPDATE ---
-        await provider.editLog(
-          widget.logToEdit!.id,
-          _aktivitasController.text,
-          _selectedDate,
-        );
+        await provider.editLog(widget.logToEdit!.id, _aktivitasController.text, _selectedDate);
       } else {
-        // --- MODE CREATE ---
-        await provider.addLog(
-          _aktivitasController.text,
-          _selectedDate,
-        );
+        await provider.addLog(_aktivitasController.text, _selectedDate);
       }
 
       if (mounted) {
@@ -69,55 +92,83 @@ class _FormLogWidgetState extends State<FormLogWidget> {
     }
   }
 
-  void _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2023),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null) setState(() => _selectedDate = picked);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundGrey,
       appBar: AppBar(
-        title: Text(_isEditing ? "Edit Log" : "Tambah Log Baru"),
+        title: Text(_isEditing ? "Edit Log Harian" : "Tambah Log Harian"),
+        backgroundColor: AppTheme.primaryBlue,
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            ListTile(
-              title: const Text("Tanggal"),
-              subtitle: Text(DateFormat('EEEE, d MMMM y').format(_selectedDate)),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: _pickDate,
-              shape: RoundedRectangleBorder(side: const BorderSide(color: Colors.grey), borderRadius: BorderRadius.circular(4)),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Detail Aktivitas", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+                const SizedBox(height: 20),
+                
+                // Input Tanggal (Read Only tapi bisa diklik)
+                TextFormField(
+                  controller: _dateController,
+                  readOnly: true,
+                  onTap: _pickDate,
+                  decoration: const InputDecoration(
+                    labelText: "Tanggal",
+                    prefixIcon: Icon(Icons.calendar_today, color: AppTheme.primaryBlue),
+                    border: OutlineInputBorder(),
+                    suffixIcon: Icon(Icons.arrow_drop_down),
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Input Aktivitas
+                TextFormField(
+                  controller: _aktivitasController,
+                  maxLines: 5,
+                  decoration: const InputDecoration(
+                    labelText: "Deskripsi Aktivitas",
+                    alignLabelWithHint: true,
+                    prefixIcon: Padding(
+                      padding: EdgeInsets.only(bottom: 80), // Icon agak ke atas
+                      child: Icon(Icons.edit_note, color: AppTheme.primaryBlue),
+                    ),
+                    border: OutlineInputBorder(),
+                    hintText: "Jelaskan pekerjaan yang Anda lakukan...",
+                  ),
+                ),
+                
+                const SizedBox(height: 30),
+                
+                // Tombol Simpan
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryBlue,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: _isLoading ? null : _save,
+                    child: _isLoading 
+                      ? const CircularProgressIndicator(color: Colors.white) 
+                      : Text(
+                          _isEditing ? "PERBARUI DATA" : "SIMPAN LOG",
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                  ),
+                )
+              ],
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _aktivitasController,
-              maxLines: 5,
-              decoration: const InputDecoration(
-                labelText: "Aktivitas",
-                border: OutlineInputBorder(),
-                alignLabelWithHint: true,
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _save,
-                child: _isLoading 
-                  ? const CircularProgressIndicator(color: Colors.white) 
-                  : Text(_isEditing ? "UPDATE LOG" : "SIMPAN LOG"),
-              ),
-            )
-          ],
+          ),
         ),
       ),
     );

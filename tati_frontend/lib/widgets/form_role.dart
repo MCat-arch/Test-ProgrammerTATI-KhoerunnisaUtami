@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/role_model.dart';
 import '../providers/role_provider.dart';
+import '../utils/app_theme.dart';
 
 class FormRoleWidget extends StatefulWidget {
   final Role? roleToEdit;
@@ -41,7 +42,7 @@ class _FormRoleWidgetState extends State<FormRoleWidget> {
 
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Data Role Berhasil Disimpan")));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Data Role Berhasil Disimpan")));
       }
     } catch (e) {
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
@@ -53,21 +54,52 @@ class _FormRoleWidgetState extends State<FormRoleWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? "Edit Role" : "Tambah Role")),
+      backgroundColor: AppTheme.backgroundGrey,
+      appBar: AppBar(
+        title: Text(_isEditing ? "Edit Role" : "Tambah Role Baru"),
+        backgroundColor: AppTheme.primaryBlue,
+        foregroundColor: Colors.white,
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _namaController,
-              decoration: const InputDecoration(labelText: "Nama Role", border: OutlineInputBorder()),
+        padding: const EdgeInsets.all(20),
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // Agar card tidak full height
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Informasi Role", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _namaController,
+                  decoration: const InputDecoration(
+                    labelText: "Nama Role", 
+                    prefixIcon: Icon(Icons.verified_user_outlined),
+                    hintText: "Contoh: Staff, Kepala Bidang",
+                  ),
+                ),
+                const SizedBox(height: 30),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryBlue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: _isLoading ? null : _save,
+                    child: _isLoading 
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("SIMPAN ROLE", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                )
+              ],
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _save,
-              child: Text("SIMPAN"),
-            )
-          ],
+          ),
         ),
       ),
     );

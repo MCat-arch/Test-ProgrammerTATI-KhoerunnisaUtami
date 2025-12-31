@@ -1,27 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:tati_frontend/widgets/form_log.dart';
 import 'package:tati_frontend/widgets/my_log.dart';
 import '../providers/auth_provider.dart';
 import '../providers/log_provider.dart';
+import '../widgets/form_log.dart'; // Ganti nama file sesuai project Anda
 import '../utils/app_theme.dart';
 
 class MyLogTab extends StatelessWidget {
   const MyLogTab({super.key});
 
-  // Helper untuk refresh saat ditarik ke bawah
   Future<void> _refresh(BuildContext context) async {
     await Provider.of<LogProvider>(context, listen: false).fetchMyLogs();
   }
 
-  // Dialog Konfirmasi Hapus
   void _confirmDelete(BuildContext context, int logId) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text("Hapus Log?"),
-        content: const Text("Log aktivitas ini akan dihapus permanen."),
+        content: const Text("Data yang dihapus tidak dapat dikembalikan."),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
           ElevatedButton(
@@ -40,7 +37,6 @@ class MyLogTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    // Cek apakah user adalah kepala dinas (logic: roleName)
     final isKadis = auth.user?.role == 'Kepala Dinas';
 
     return Consumer<LogProvider>(
@@ -52,9 +48,9 @@ class MyLogTab extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.folder_open, size: 60, color: Colors.grey[400]),
+                Icon(Icons.assignment_outlined, size: 60, color: Colors.grey[300]),
                 const SizedBox(height: 10),
-                const Text("Belum ada log aktivitas.", style: TextStyle(color: Colors.grey)),
+                Text("Belum ada log aktivitas.", style: TextStyle(color: Colors.grey[600])),
               ],
             ),
           );
@@ -62,66 +58,27 @@ class MyLogTab extends StatelessWidget {
 
         return RefreshIndicator(
           onRefresh: () => _refresh(context),
-          color: AppTheme.primaryBlue,
-          child: ListView.separated(
-            padding: const EdgeInsets.all(16),
+          child: ListView.builder( // Gunakan builder biasa, margin sudah dihandle card
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             itemCount: provider.myLogs.length,
-            separatorBuilder: (ctx, i) => const SizedBox(height: 10),
             itemBuilder: (ctx, i) {
               final log = provider.myLogs[i];
 
-              // Stack digunakan agar tombol Edit/Delete bisa melayang di atas Card
-              return Stack(
-                children: [
-                  LogCardWidget(
-                    log: log,
-                    isKadis: isKadis, // Sembunyikan status jika Kadis
-                  ),
-                  
-                  // Tombol Aksi (Hanya muncul jika status pending, atau selalu muncul tergantung aturan)
-                  // Di sini kita munculkan selalu untuk Staff
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)
-                        ]
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // EDIT
-                          IconButton(
-                            icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.secondaryBlue),
-                            constraints: const BoxConstraints(), // Hapus padding bawaan
-                            padding: const EdgeInsets.all(6),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => FormLogWidget(logToEdit: log),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 4),
-                          // DELETE
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, size: 18, color: AppTheme.errorRed),
-                            constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.all(6),
-                            onPressed: () => _confirmDelete(context, log.id),
-                          ),
-                        ],
-                      ),
+              // Panggil LogCardWidget TANPA Stack
+              return LogCardWidget(
+                log: log,
+                isKadis: isKadis,
+                
+                // Pass fungsi Edit & Delete kesini agar muncul di Footer Card
+                onEdit: () {
+                   Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FormLogWidget(logToEdit: log),
                     ),
-                  ),
-                ],
+                  );
+                },
+                onDelete: () => _confirmDelete(context, log.id),
               );
             },
           ),

@@ -1,91 +1,189 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:tati_frontend/providers/log_provider.dart';
 import 'package:intl/intl.dart';
+import '../models/logs_model.dart';
+import '../utils/app_theme.dart';
 
-class VerificationTab extends StatelessWidget {
-  const VerificationTab({super.key});
+class VerificationCard extends StatelessWidget {
+  final LogsModel log;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
 
-  void _showRejectDialog(BuildContext context, int logId) {
-    final noteController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Tolak Log Harian"),
-        content: TextField(
-          controller: noteController,
-          decoration: const InputDecoration(labelText: "Alasan Penolakan"),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () {
-              if (noteController.text.isEmpty) return;
-              Provider.of<LogProvider>(context, listen: false)
-                  .rejectLog(logId, noteController.text)
-                  .then((_) => Navigator.pop(ctx));
-            },
-            child: const Text("Tolak"),
-          )
-        ],
-      ),
-    );
-  }
+  const VerificationCard({
+    super.key,
+    required this.log,
+    required this.onApprove,
+    required this.onReject,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LogProvider>(
-      builder: (ctx, provider, _) {
-        if (provider.isLoading) return const Center(child: CircularProgressIndicator());
-        
-        // Filter: Hanya tampilkan yang Pending agar list bersih
-        // Atau tampilkan semua tapi urutkan pending paling atas (sudah dihandle backend)
-        final logs = provider.teamLogs; 
-        
-        if (logs.isEmpty) return const Center(child: Text("Tidak ada log bawahan"));
-
-        return RefreshIndicator(
-          onRefresh: () => provider.fetchTeamLogs(),
-          child: ListView.builder(
-            itemCount: logs.length,
-            itemBuilder: (ctx, i) {
-              final log = logs[i];
-              return Card(
-                color: log.status == 'pending' ? Colors.yellow[50] : Colors.white, // Highlight pending
-                child: ListTile(
-                  title: Text(log.pegawai?.nama ?? 'Bawahan'),
-                  subtitle: Column(
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // --- HEADER: PROFIL PEGAWAI ---
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Row(
+              children: [
+                // Avatar Inisial
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
+                  child: Text(
+                    log.pegawai?.nama.substring(0, 1).toUpperCase() ?? "U",
+                    style: const TextStyle(
+                      color: AppTheme.primaryBlue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Nama & Jabatan
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(log.aktivitas),
-                      Text(DateFormat('dd MMM y').format(log.tanggal), style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      Text(
+                        log.pegawai?.nama ?? "Nama Tidak Diketahui",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: AppTheme.textDark,
+                        ),
+                      ),
+                      Text(
+                        log.pegawai?.jabatan ?? "Jabatan -",
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.textGrey,
+                        ),
+                      ),
                     ],
                   ),
-                  trailing: log.status == 'pending' 
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.check_circle, color: Colors.green),
-                          onPressed: () => provider.approveLog(log.id),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.cancel, color: Colors.red),
-                          onPressed: () => _showRejectDialog(context, log.id),
-                        ),
-                      ],
-                    )
-                  : Text(
-                      log.statusText, 
-                      style: TextStyle(color: log.statusColor, fontWeight: FontWeight.bold),
-                    ),
                 ),
-              );
-            },
+                // Badge Tanggal
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Text(
+                    DateFormat('dd MMM').format(log.tanggal),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textDark,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        );
-      },
+
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: Divider(height: 24),
+          ),
+
+          // --- BODY: AKTIVITAS ---
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Aktivitas:",
+                  style: TextStyle(fontSize: 11, color: AppTheme.textGrey, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  log.aktivitas,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // --- FOOTER: ACTION BUTTONS (Full Width) ---
+          Container(
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 147, 166, 195),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+              border: Border(top: BorderSide(color: const Color.fromARGB(255, 0, 0, 0)!)),
+            ),
+            child: Row(
+              children: [
+                // Tombol TOLAK
+                Expanded(
+                  child: InkWell(
+                    onTap: onReject,
+                    borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(12)),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      alignment: Alignment.center,
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.close, size: 18, color: AppTheme.errorRed),
+                          SizedBox(width: 8),
+                          Text(
+                            "Tolak",
+                            style: TextStyle(
+                              color: AppTheme.errorRed,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Garis Pemisah Vertikal
+                Container(width: 1, height: 48, color: Colors.grey[300]),
+                
+                // Tombol SETUJUI
+                Expanded(
+                  child: InkWell(
+                    onTap: onApprove,
+                    borderRadius: const BorderRadius.only(bottomRight: Radius.circular(12)),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      alignment: Alignment.center,
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check_circle, size: 18, color: AppTheme.successGreen),
+                          SizedBox(width: 8),
+                          Text(
+                            "Setujui",
+                            style: TextStyle(
+                              color: AppTheme.successGreen,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

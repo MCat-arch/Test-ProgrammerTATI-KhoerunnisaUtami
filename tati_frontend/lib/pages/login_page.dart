@@ -88,7 +88,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    "SISTEM E-KINERJA",
+                    "SISTEM E-LOG",
                     style: TextStyle(
                       fontSize: 24, 
                       fontWeight: FontWeight.bold, 
@@ -202,7 +202,7 @@ class _LoginPageState extends State<LoginPage> {
                   // 3. FOOTER
                   const SizedBox(height: 30),
                   const Text(
-                    "© 2024 Dinas Komunikasi dan Informatika",
+                    "© 2025 Develop by Khoerunnisa Utami",
                     style: TextStyle(color: AppTheme.textGrey, fontSize: 11),
                   ),
                 ],
